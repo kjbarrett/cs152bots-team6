@@ -6,6 +6,7 @@ import json
 import logging
 import re
 import requests
+import openai
 from report import Report
 import pdb
 
@@ -24,6 +25,7 @@ with open(token_path) as f:
     # If you get an error here, it means your token is formatted incorrectly. Did you put it in quotes?
     tokens = json.load(f)
     discord_token = tokens['discord']
+    OpenApi_token = tokens['openAPI']
 
 
 class ModBot(discord.Client):
@@ -31,7 +33,8 @@ class ModBot(discord.Client):
         intents = discord.Intents.default()
         intents.message_content = True
         super().__init__(command_prefix='.', intents=intents)
-        self.group_num = None
+        self.group_num = 6
+        self.chat_client = openai.OpenAI(api_key = OpenApi_token)
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
 
@@ -115,7 +118,16 @@ class ModBot(discord.Client):
         TODO: Once you know how you want to evaluate messages in your channel, 
         insert your code here! This will primarily be used in Milestone 3. 
         '''
-        return message
+
+        response = self.chat_client.completions.create(
+            model = "gpt-3.5-turbo-0613 ",
+            messages = [
+                {"role": "system", "content": "You are a tasked with determining if the current message is disinformation. Classify it as Yes or No"},
+                {"role": "user", "content": message }
+            ]
+        )
+
+        return response
 
     
     def code_format(self, text):
@@ -125,6 +137,8 @@ class ModBot(discord.Client):
         shown in the mod channel. 
         '''
         return "Evaluated: '" + text+ "'"
+
+
 
 
 client = ModBot()
