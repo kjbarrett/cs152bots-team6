@@ -119,16 +119,14 @@ class ModBot(discord.Client):
         insert your code here! This will primarily be used in Milestone 3. 
         '''
 
-        response = self.chat_client.completions.create(
-            model = "gpt-3.5-turbo-0613 ",
-            messages = [
-                {"role": "system", "content": "You are a tasked with determining if the current message is disinformation. Classify it as Yes or No"},
-                {"role": "user", "content": message }
+        response = self.chat_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are tasked with determining if the current message is disinformation. Classify it as Yes or No."},
+                {"role": "user", "content": message}
             ]
         )
-
-        return response
-
+        return response.choices[0].message.content
     
     def code_format(self, text):
         ''''
