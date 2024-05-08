@@ -140,11 +140,14 @@ class ModBot(discord.Client):
         '''
         return "Evaluated: '" + text+ "'"
 
-    def send_message_to_group(self, report):
+    async def send_message_to_group(self, report):
         # Need to fix this function
         report_content = f'Reported Message: {report}'
-        mod_channel = self.mod_channels[guild.id]
-        await mod_channel.send(report_content)
+        # print(self.mod_channels)
+        # mod_channel = self.mod_channels[guild.id]
+        # await mod_channel.send(report_content)
+        mod_channel = self.mod_channels[report.guild.id]
+        await mod_channel.send(f'A user just reported a message:\n{report.author.name}: "{report.content}"')
 
 
 

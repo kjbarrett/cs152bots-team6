@@ -57,7 +57,7 @@ class Report:
             self.state = State.MESSAGE_IDENTIFIED
 
             # ToDo: Flow to foward message to mod channel for review
-            # await self.client.send_message_to_group(message.content)
+            await self.client.send_message_to_group(message)
 
             return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
                     "I have forwarded the message to moderators for reviewing."]
