@@ -165,7 +165,7 @@ class Report:
                         
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
-                return ["TODO: User is directed to Trust & Safety policies on fact checking misinformation. \n" + "Would you like to block this user so that you don't see any future messages from them?"]
+                return ["Here is our Trust & Safety policies on fact checking information: https://discord.com/safety/misinformation-policy-explainer. \n" + "Would you like to block this user so that you don't see any future messages from them?"]
 
             
             return ["Would you like to block this user so that you don't see any future messages from them?"]
@@ -176,11 +176,11 @@ class Report:
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
                 self.state = State.REPORT_COMPLETE
-                return ["TODO: Blocked"]
+                return ["User has been blocked."]
                 
             elif message.content.strip().lower() == 'no':
                 self.state = State.REPORT_COMPLETE
-                return ["TODO: Not blocked"]
+                return ["User was not blocked."]
                 
             else:
                 return ["Please answer 'yes' or 'no'."]
