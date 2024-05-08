@@ -6,6 +6,12 @@ class State(Enum):
     REPORT_START = auto()
     AWAITING_MESSAGE = auto()
     MESSAGE_IDENTIFIED = auto()
+    
+    # New states following reporting flow
+    AWAITING_DETAILS = auto()
+    AWAITING_DETAILS2 = auto()
+    AWAITING_DETAILS3 = auto()
+    BLOCKING_USER = auto()
     REPORT_COMPLETE = auto()
 
 class Report:
@@ -17,6 +23,10 @@ class Report:
         self.state = State.REPORT_START
         self.client = client
         self.message = None
+        self.report_details1 = None  #Details of the report I added
+        self.report_details2 = None
+        self.message_link = None #For reported msg link
+        self.guild_id = None  # Storing guild ID
     
     async def handle_message(self, message):
         '''
@@ -31,7 +41,7 @@ class Report:
         
         if self.state == State.REPORT_START:
             reply =  "Thank you for starting the reporting process. "
-            reply += "Say `help` at any time for more information.\n\n"
+            #reply += "Say `help` at any time for more information.\n\n"
             reply += "Please copy paste the link to the message you want to report.\n"
             reply += "You can obtain this link by right-clicking the message and clicking `Copy Message Link`."
             self.state = State.AWAITING_MESSAGE
@@ -59,14 +69,122 @@ class Report:
             # ToDo: Flow to foward message to mod channel for review
             await self.client.send_message_to_group(message)
 
-            return ["I found this message:", "```" + message.author.name + ": " + message.content + "```", \
-                    "I have forwarded the message to moderators for reviewing."]
-        
+            return [
+            
+                "I found this message:",
+                "```" + message.author.name + ": " + message.content + "```",
+                
+                "Please select a reason for reporting this message using the numbers 1 through 4:\n" +
+                "```" +
+                "1. Harmful misinformation\n" +
+                "2. Abuse or harrassment\n" +
+                "3. Spam\n" +
+                "4. Other" +
+                "```"
+                
+            ]
+
+                    
+                    
         if self.state == State.MESSAGE_IDENTIFIED:
-            return ["<insert rest of reporting flow here>"]
+            
+            # Ensure integer was selected
+            try:
+                user_choice = int(message.content)
+            except ValueError:
+                return []
+            
+            # Not used currently
+            reasons = {
+                1: "Harmful misinformation",
+                2: "Abuse or harassment",
+                3: "Spam",
+                4: "Other"
+            }
+        
+            # Flow for harmful misinformation
+            if user_choice == 1:
+                self.report_details1 = "Harmful misinformation"
+                self.state = State.AWAITING_DETAILS
+                
+                return ["Is the misinformation contrary to current expert evidence? Please answer 'yes' or 'no'."]
+                
+                
+            # Flow for everything else
+            elif user_choice in (2, 3, 4):
+                self.state = State.REPORT_COMPLETE
+                return ["Thank you for reporting this message. It has been sent to the moderation team."]
+                
+            # Invalid response
+            else:
+                return ["Please select a valid number from 1 to 4."]
+                
+        if self.state == State.AWAITING_DETAILS:
 
-        return []
+            # Yes case, make less error prone by using strip and lower
+            if message.content.strip().lower() == 'yes':
+                self.state = State.AWAITING_DETAILS2
+                return ["What kind of harmful misinformation?\n" + "```" +
+                    "1. Conspiracy theories that target a protected identity\n" +
+                    "2. Misinformation regarding COVID-19\n" +
+                    "3. Misinformation regarding political elections\n" +
+                    "4. Misinformation regarding science or the environment" +
+                    "5. Misinformation regarding historical events" +
+                    "6. Other misinformation" +
+                    "```"]
+                    
+            elif message.content.strip().lower() == 'no':
+                self.state = State.BLOCKING_USER
+                return ["Would you like to block this user so that you don't see any future messages from them?"]
+                
+            # Invalid response
+            else:
+                return ["Please answer 'yes' or 'no'."]
+                
+        if self.state == State.AWAITING_DETAILS2:
+        
+            # Ensure integer was selected
+            try:
+                user_choice = int(message.content)
+            except ValueError:
+                return []
+            
+            if user_choice in (1, 2, 3, 4, 5, 6):
+            
+                self.state = State.AWAITING_DETAILS3
+                return ["Thank you for reporting this message. Our moderation team will independently fact check the information and take the appropriate actions. Would you like to learn more about our independent fact checking process?"]
+                
+            # Invalid response
+            else:
+                return ["Please select a valid number from 1 to 6."]
+            
+        
+        if self.state == State.AWAITING_DETAILS3:
+        
+            self.state = State.BLOCKING_USER
+                        
+            # Yes case, make less error prone by using strip and lower
+            if message.content.strip().lower() == 'yes':
+                return ["TODO: User is directed to Trust & Safety policies on fact checking misinformation. \n" + "Would you like to block this user so that you don't see any future messages from them?"]
 
+            
+            return ["Would you like to block this user so that you don't see any future messages from them?"]
+            
+        
+        if self.state == State.BLOCKING_USER:
+        
+            # Yes case, make less error prone by using strip and lower
+            if message.content.strip().lower() == 'yes':
+                self.state == State.REPORT_COMPLETE
+                return ["TODO: Blocked"]
+                
+            elif message.content.strip().lower() == 'no':
+                self.state == State.REPORT_COMPLETE
+                return ["TODO: Not blocked"]
+                
+            else:
+                return ["Please answer 'yes' or 'no'."]
+                
     def report_complete(self):
         return self.state == State.REPORT_COMPLETE
     
