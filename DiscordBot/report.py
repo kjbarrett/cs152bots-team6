@@ -128,8 +128,8 @@ class Report:
                     "1. Conspiracy theories that target a protected identity\n" +
                     "2. Misinformation regarding COVID-19\n" +
                     "3. Misinformation regarding political elections\n" +
-                    "4. Misinformation regarding science or the environment" +
-                    "5. Misinformation regarding historical events" +
+                    "4. Misinformation regarding science or the environment\n" +
+                    "5. Misinformation regarding historical events\n" +
                     "6. Other misinformation" +
                     "```"]
                     
