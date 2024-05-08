@@ -112,8 +112,8 @@ class Report:
                 
             # Flow for everything else
             elif user_choice in (2, 3, 4):
-                self.state = State.REPORT_COMPLETE
-                return ["Thank you for reporting this message. It has been sent to the moderation team."]
+                self.state = State.BLOCKING_USER
+                return ["Thank you for reporting this message. Our content moderation team will review your report and take any necessary actions.\n" + "Would you like to block this user so that you don’t see any future messages from them?"]
                 
             # Invalid response
             else:
@@ -175,11 +175,11 @@ class Report:
         
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
-                self.state == State.REPORT_COMPLETE
+                self.state = State.REPORT_COMPLETE
                 return ["TODO: Blocked"]
                 
             elif message.content.strip().lower() == 'no':
-                self.state == State.REPORT_COMPLETE
+                self.state = State.REPORT_COMPLETE
                 return ["TODO: Not blocked"]
                 
             else:
