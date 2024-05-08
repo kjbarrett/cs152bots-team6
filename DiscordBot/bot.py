@@ -102,8 +102,8 @@ class ModBot(discord.Client):
             self.reports.pop(author_id)
 
     async def handle_channel_message(self, message):
-        # Only handle messages sent in the "group-#" channel
-        if not message.channel.name == f'group-{self.group_num}':
+        # Only handle messages sent in the "group-#" channel and the mod channel
+        if not (message.channel.name == f'group-{self.group_num}' or message.channel.name == f'group-{self.group_num}-mod'):
             return
 
         # Forward the message to the mod channel
@@ -140,6 +140,11 @@ class ModBot(discord.Client):
         '''
         return "Evaluated: '" + text+ "'"
 
+    def send_message_to_group(self, report):
+        # Need to fix this function
+        report_content = f'Reported Message: {report}'
+        mod_channel = self.mod_channels[guild.id]
+        await mod_channel.send(report_content)
 
 
 
