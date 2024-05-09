@@ -8,6 +8,7 @@ import re
 import requests
 import openai
 from report import Report
+from moderator import Moderator
 import pdb
 
 # Set up logging to the console
@@ -37,6 +38,7 @@ class ModBot(discord.Client):
         self.chat_client = openai.OpenAI(api_key = OpenApi_token)
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
+        self.moderator = {}
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -157,7 +159,10 @@ class ModBot(discord.Client):
         
         mod_channel = self.mod_channels[guild_id]
         await mod_channel.send(report_content)
-
+        self.moderator[0] = Moderator(self)
+        responses = await self.moderator[0].handle_message(report)
+        for r in responses:
+            await mod_channel.send(r)
 
 client = ModBot()
 client.run(discord_token)
