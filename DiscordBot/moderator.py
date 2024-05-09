@@ -23,16 +23,6 @@ class Moderator:
     def __init__(self, client):
         self.state = State.REPORT_RECEIVED
         self.client = client
-
-        """
-        I think all of this will come from the message we read from the mod channel? Not sure how to get that
-        self.message = None
-        self.report_details1 = None  #Details of the report I added
-        self.report_details2 = None
-        self.message_link = None #For reported msg link
-        self.guild_id = None  # Storing guild ID
-        self.reporter_id = None # store userid of reporter
-        """
         self.source = None
     
     async def handle_message(self, message):
@@ -95,7 +85,7 @@ class Moderator:
                 
         if self.state == State.AWAITING_SOURCE:
 
-            source = message.content
+            self.source = message.content
             self.state = State.AWAITING_MISINFO
             return ["Is this misinformation? Please answer 'yes' or 'no'."]
             
