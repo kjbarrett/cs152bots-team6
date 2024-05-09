@@ -176,11 +176,11 @@ class Report:
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
                 self.state = State.REPORT_COMPLETE
-                return ["User has been blocked."]
+                return ["User has been blocked. Report finished"]
                 
             elif message.content.strip().lower() == 'no':
                 self.state = State.REPORT_COMPLETE
-                return ["User was not blocked."]
+                return ["User was not blocked. Report finished"]
                 
             else:
                 return ["Please answer 'yes' or 'no'."]
