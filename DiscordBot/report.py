@@ -152,7 +152,7 @@ class Report:
             if user_choice in (1, 2, 3, 4, 5, 6):
             
                 self.state = State.AWAITING_DETAILS3
-                return ["Thank you for reporting this message. Our moderation team will independently fact check the information and take the appropriate actions. Would you like to learn more about our independent fact checking process?"]
+                return ["Thank you for reporting this message. Our moderation team will independently fact check the information and take the appropriate actions. Would you like to learn more about our independent fact checking process? Please answer 'yes' or 'no'."]
                 
             # Invalid response
             else:
@@ -165,7 +165,7 @@ class Report:
                         
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
-                return ["Here is our Trust & Safety policies on fact checking information: https://discord.com/safety/misinformation-policy-explainer. \n" + "Would you like to block this user so that you don't see any future messages from them?"]
+                return ["Here is our Trust & Safety policies on fact checking information: https://discord.com/safety/misinformation-policy-explainer. \n" + "Would you like to block this user so that you don't see any future messages from them? Please answer 'yes' or 'no'."]
 
             
             return ["Would you like to block this user so that you don't see any future messages from them?"]
