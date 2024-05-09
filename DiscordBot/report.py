@@ -113,7 +113,7 @@ class Report:
             # Flow for everything else
             elif user_choice in (2, 3, 4):
                 self.state = State.BLOCKING_USER
-                return ["Thank you for reporting this message. Our content moderation team will review your report and take any necessary actions.\n" + "Would you like to block this user so that you don’t see any future messages from them?"]
+                return ["Thank you for reporting this message. Our content moderation team will review your report and take any necessary actions.\n" + "Would you like to block this user so that you don’t see any future messages from them? Please answer 'yes' or 'no'."]
                 
             # Invalid response
             else:
@@ -168,7 +168,7 @@ class Report:
                 return ["Here is our Trust & Safety policies on fact checking information: https://discord.com/safety/misinformation-policy-explainer. \n" + "Would you like to block this user so that you don't see any future messages from them? Please answer 'yes' or 'no'."]
 
             
-            return ["Would you like to block this user so that you don't see any future messages from them?"]
+            return ["Would you like to block this user so that you don't see any future messages from them? Please answer 'yes' or 'no'."]
             
         
         if self.state == State.BLOCKING_USER:
