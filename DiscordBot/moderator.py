@@ -8,6 +8,7 @@ class State(Enum):
     FLAGGED = auto()
     UNSURE = auto()
     AWAITING_SOURCE = auto()
+    AWAITING_MISINFO = auto()
     AWAITING_DECEPTION = auto()
     AWAITING_ABUSE = auto()
     AWAITING_CONTEXT = auto()
@@ -93,50 +94,126 @@ class Moderator:
                 return ["Please answer 'yes' or 'no'."]
                 
         if self.state == State.AWAITING_SOURCE:
-        
-            source = message.content
-            
-            if user_choice in (1, 2, 3, 4, 5, 6):
-                
-                self.report_details2 = reasons[user_choice]
-                self.state = State.AWAITING_DETAILS3
-                return ["Thank you for reporting this message. Our moderation team will independently fact check the information and take the appropriate actions. Would you like to learn more about our independent fact checking process? Please answer 'yes' or 'no'."]
-                
-            # Invalid response
-            else:
-                return ["Please select a valid number from 1 to 6."]
-            
-        
-        if self.state == State.AWAITING_DETAILS3:
-        
-            self.state = State.BLOCKING_USER
-                        
-            # Yes case, make less error prone by using strip and lower
-            if message.content.strip().lower() == 'yes':
-                return ["Here is our Trust & Safety policies on fact checking information: https://discord.com/safety/misinformation-policy-explainer. \n" + "Would you like to block this user so that you don't see any future messages from them? Please answer 'yes' or 'no'."]
 
-            
-            return ["Would you like to block this user so that you don't see any future messages from them? Please answer 'yes' or 'no'."]
+            source = message.content
+            self.state = State.AWAITING_MISINFO
+            return ["Is this misinformation? Please answer 'yes' or 'no'."]
             
         
-        if self.state == State.BLOCKING_USER:
-        
-            # Yes case, make less error prone by using strip and lower
+        if self.state == State.AWAITING_MISINFO:
+
             if message.content.strip().lower() == 'yes':
             
-                await self.client.send_message_to_group(self.guild_id, self) #forward message to mod channel
-                self.state = State.REPORT_COMPLETE
-                return ["User has been blocked. Report finished"]
+                self.state = AWAITING_DECEPTION
+                return ["Is the misinformation provided deceptive in nature?"]
                 
             elif message.content.strip().lower() == 'no':
                 
-                await self.client.send_message_to_group(self.guild_id, self)
-                self.state = State.REPORT_COMPLETE
-                return ["User was not blocked. Report finished"]
-                
+                self.state = AWAITING_ABUSE
+                reply = "Does this seem to be an abuse of the report system or failure in the automated detection system? "
+                reply += "Please select one of the options below:\n" + 
+                    "```" +
+                    "1. No\n" +
+                    "2. Yes, abuse\n" +
+                    "3. Yes, system failure\n" +
+                    "```”
+                return [reply]
+
             else:
                 return ["Please answer 'yes' or 'no'."]
+
+        if self.state == State.AWAITING_ABUSE:
+            try:
+                user_choice = int(message.content)
+            except ValueError:
+                return []
+
+            abuse = {
+                1: "No",
+                2: "Yes, abuse",
+                3: "Yes, system failure"
+            }
+
+            if user_choice == 1:
+                self.state = State.MODERATION_COMPLETE
+                return ["No action necessary. Moderation flow complete."]
+            elif user_choice == 2:
+                self.state = State.MODERATION_COMPLETE
+                return ["The reporting user has been banned from making further reports for 24 hours. Moderation flow complete."]
+            elif user_choice = 3:
+                self.state = State.FLAGGED
+                return ["This report has been sent to the automated detection system development team for review."]
+            else:
+                return ["Please select a valid number from 1 to 3."]
+
+        if self.state == State.AWAITING_DECEPTION:
+        
+            if message.content.strip().lower() == 'yes':
+               
+                self.state = State.AWAITING_ACTION
+                reply = "Please consider the potential harm caused by the deception, our high risk subjects defined in our Trust & Safety policies, and history of the user to choose an appropriate action from below: " + 
+                    "```" +
+                    "1. Delete message\n" +
+                    "2. Send warning\n" +
+                    "3. Disable account\n" +
+                    "```”
+                return [reply]
+
+            elif message.content.strip().lower() == 'no':
+                self.state = State.AWAITING_CONTEXT
                 
-    def report_complete(self):
+                return ["Given user history/context, does this user require disciplinary action? Please answer 'yes' or 'no'."]
+                
+            # Invalid response
+            else:
+                return ["Please answer 'yes' or 'no'."]
+
+        if self.state == State.AWAITING_CONTEXT:
+            if message.content.strip().lower() == 'yes':
+               
+                self.state = State.AWAITING_ACTION
+                reply = "Please consider the potential harm caused by the deception, our high risk subjects defined in our Trust & Safety policies, and history of the user to choose an appropriate action from below: " + 
+                    "```" +
+                    "1. Delete message\n" +
+                    "2. Send warning\n" +
+                    "3. Disable account\n" +
+                    "```”
+                return [reply]
+
+            elif message.content.strip().lower() == 'no':
+                self.state = State.MODERATION_COMPLETE
+                
+                return ["No action necessary. Moderation flow complete."]
+                
+            # Invalid response
+            else:
+                return ["Please answer 'yes' or 'no'."]
+            
+        
+        if self.state == State.AWAITING_ACTION:
+            try:
+                user_choice = int(message.content)
+            except ValueError:
+                return []
+
+            abuse = {
+                1: "Delete message",
+                2: "Send warning",
+                3: "Disable account"
+            }
+
+            if user_choice == 1:
+                self.state = State.MODERATION_COMPLETE
+                return ["The reported message has been deleted. Moderation flow complete."]
+            elif user_choice == 2:
+                self.state = State.MODERATION_COMPLETE
+                return ["The reported message has been deleted. The user has been sent a warning and is now banned from messaging for 2 hours. Moderation flow complete."]
+            elif user_choice = 3:
+                self.state = State.FLAGGED
+                return ["The reported message has been deleted and the reported user's account has been disabled. Moderation flow complete."]
+            else:
+                return ["Please select a valid number from 1 to 3."]
+                
+    def moderation_complete(self):
         return self.state == State.MODERATION_COMPLETE or State.FLAGGED
     
