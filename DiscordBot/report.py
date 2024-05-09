@@ -27,6 +27,7 @@ class Report:
         self.report_details2 = None
         self.message_link = None #For reported msg link
         self.guild_id = None  # Storing guild ID
+        self.reporter_id = None # store userid of reporter
     
     async def handle_message(self, message):
         '''
@@ -53,6 +54,10 @@ class Report:
             if not m:
                 return ["I'm sorry, I couldn't read that link. Please try again or say `cancel` to cancel."]
             guild = self.client.get_guild(int(m.group(1)))
+            
+            self.message_link = message.content
+            self.reporter_id = message.author.id
+            self.guild_id = int(m.group(1))
             if not guild:
                 return ["I cannot accept reports of messages from guilds that I'm not in. Please have the guild owner add me to the guild and try again."]
             channel = guild.get_channel(int(m.group(2)))
@@ -67,7 +72,7 @@ class Report:
             self.state = State.MESSAGE_IDENTIFIED
 
             # ToDo: Flow to foward message to mod channel for review
-            await self.client.send_message_to_group(message)
+            # await self.client.send_message_to_group(message)
 
             return [
             
@@ -93,8 +98,7 @@ class Report:
                 user_choice = int(message.content)
             except ValueError:
                 return []
-            
-            # Not used currently
+
             reasons = {
                 1: "Harmful misinformation",
                 2: "Abuse or harassment",
@@ -112,6 +116,9 @@ class Report:
                 
             # Flow for everything else
             elif user_choice in (2, 3, 4):
+            
+                self.report_details1 = reasons[user_choice]
+                self.report_details2 = "unspecified"
                 self.state = State.BLOCKING_USER
                 return ["Thank you for reporting this message. Our content moderation team will review your report and take any necessary actions.\n" + "Would you like to block this user so that you don’t see any future messages from them? Please answer 'yes' or 'no'."]
                 
@@ -123,6 +130,7 @@ class Report:
 
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
+               
                 self.state = State.AWAITING_DETAILS2
                 return ["What kind of harmful misinformation?\n" + "```" +
                     "1. Conspiracy theories that target a protected identity\n" +
@@ -135,6 +143,9 @@ class Report:
                     
             elif message.content.strip().lower() == 'no':
                 self.state = State.BLOCKING_USER
+                
+                self.report_details2 = "unspecified"
+                
                 return ["Would you like to block this user so that you don't see any future messages from them?"]
                 
             # Invalid response
@@ -149,8 +160,18 @@ class Report:
             except ValueError:
                 return []
             
-            if user_choice in (1, 2, 3, 4, 5, 6):
+            reasons = {
+                1: "Conspiracy theories that target a protected identity",
+                2: "Misinformation regarding COVID-19",
+                3: "Misinformation regarding political elections",
+                4: "Misinformation regarding science or the environment",
+                5: "Misinformation regarding historical events",
+                6: "Other misinformation"
+            }
             
+            if user_choice in (1, 2, 3, 4, 5, 6):
+                
+                self.report_details2 = reasons[user_choice]
                 self.state = State.AWAITING_DETAILS3
                 return ["Thank you for reporting this message. Our moderation team will independently fact check the information and take the appropriate actions. Would you like to learn more about our independent fact checking process? Please answer 'yes' or 'no'."]
                 
@@ -175,10 +196,14 @@ class Report:
         
             # Yes case, make less error prone by using strip and lower
             if message.content.strip().lower() == 'yes':
+            
+                await self.client.send_message_to_group(self.guild_id, self) #forward message to mod channel
                 self.state = State.REPORT_COMPLETE
                 return ["User has been blocked. Report finished"]
                 
             elif message.content.strip().lower() == 'no':
+                
+                await self.client.send_message_to_group(self.guild_id, self)
                 self.state = State.REPORT_COMPLETE
                 return ["User was not blocked. Report finished"]
                 
