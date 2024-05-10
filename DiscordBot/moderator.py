@@ -99,7 +99,7 @@ class Moderator:
                 
             elif message.content.strip().lower() == 'no':
                 
-                self.state = AWAITING_ABUSE
+                self.state = State.AWAITING_ABUSE
                 reply = "Does this seem to be an abuse of the report system or failure in the automated detection system? "
                 reply += "Please select one of the options below:\n" + \
                     "```" + \
