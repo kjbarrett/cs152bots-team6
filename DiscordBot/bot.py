@@ -72,6 +72,7 @@ class ModBot(discord.Client):
         # Check if this message was sent in a server ("guild") or if it's a DM
         if message.guild:
             await self.handle_channel_message(message)
+
         else:
             await self.handle_dm(message)
 
@@ -108,11 +109,28 @@ class ModBot(discord.Client):
         if not (message.channel.name == f'group-{self.group_num}' or message.channel.name == f'group-{self.group_num}-mod'):
             return
 
-        # Forward the message to the mod channel
+
+#        # Forward the message to the mod channel
         mod_channel = self.mod_channels[message.guild.id]
-        await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
-        scores = self.eval_text(message.content)
-        await mod_channel.send(self.code_format(scores))
+#        
+        author_id = message.author.id
+        responses = []
+        
+#        if author_id not in self.moderator:
+#            self.moderator[author_id] = Moderator(self)
+            
+        responses = await self.moderator[0].handle_message_1(message)
+        for r in responses:
+            await mod_channel.send(r)
+            
+#        if self.moderator[author_id].moderation_complete():
+#            self.moderator.pop(author_id)
+            
+#        await mod_channel.send(f'Forwarded message:\n{message.author.name}: "{message.content}"')
+#        scores = self.eval_text(message.content)
+#        await mod_channel.send(self.code_format(scores))
+
+
 
     
     def eval_text(self, message):
@@ -160,9 +178,25 @@ class ModBot(discord.Client):
         mod_channel = self.mod_channels[guild_id]
         await mod_channel.send(report_content)
         self.moderator[0] = Moderator(self)
-        responses = await self.moderator[0].handle_message(report)
+        responses = await self.moderator[0].handle_message_1(report)
         for r in responses:
             await mod_channel.send(r)
+##        for r in responses:
+##            await mod_channel.send(r)
+#
+#
+#        author_id = message.author.id
+#        responses = []
+#        
+#        if author_id not in self.moderator:
+#            self.moderator[author_id] = Moderator(self)
+#            
+#        responses = await self.moderator[author_id].handle_message_1(report)
+#        for r in responses:
+#            await mod_channel.send(r)
+#            
+#        if self.moderator[author_id].moderation_complete():
+#            self.moderator.pop(author_id)
 
 client = ModBot()
 client.run(discord_token)

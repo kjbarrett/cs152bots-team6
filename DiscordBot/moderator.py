@@ -25,7 +25,7 @@ class Moderator:
         self.client = client
         self.source = None
     
-    async def handle_message(self, message):
+    async def handle_message_1(self, message):
         '''
         This function makes up the meat of the moderation flow. 
         '''
@@ -45,7 +45,7 @@ class Moderator:
             try:
                 user_choice = int(message.content)
             except ValueError:
-                return []
+                return ["error"]
 
             confidence = {
                 1: "Confident",
@@ -94,7 +94,7 @@ class Moderator:
 
             if message.content.strip().lower() == 'yes':
             
-                self.state = AWAITING_DECEPTION
+                self.state = State.AWAITING_DECEPTION
                 return ["Is the misinformation provided deceptive in nature?"]
                 
             elif message.content.strip().lower() == 'no':
