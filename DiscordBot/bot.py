@@ -172,7 +172,22 @@ class ModBot(discord.Client):
         response = self.chat_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are tasked with determining if the current message is disinformation. Classify it as Yes or No. If it is classified as disinformation, give a brief explanation."},
+                {"role": "system", "content":
+                """
+                You are tasked with determining if the current message is misinformation and if it should be moderated.   You are given some context (a Message). You must indicate with a Yes/No answer whether the message should be classified as misinformation. You must also decide with a Yes/No answer if the message should be moderated.  Misinformation is defined as “Information that contradicts the best expert evidence at the time”. Determine this to the best of your ability.  Messages should be Moderated if they fit these categories:    1.) If the misinformation provided is deceptive in nature. Deception is defined as "An intentional attempt to mislead someone.”  2.) If the misinformation’s topic is a high-risk category. The high-risk categories are: Political elections, COVID-19 or other public health issues, Conspiracy theories that target a protected identity, or Misinformation regarding science or the environment.   3.) If the misinformation is not a topic in high-risk categories, but can harm certain people or groups of people   --- Follow the following format. The use of ... is a placeholder that you must continue writing on.   Message: {User’s message}   Explanation : Let’s think step by step in order to determine if this message is Misinformation. We …  Misinformation: {Yes or No}   Moderation explanation: If the Message is not Misinformation the message should not be Moderated, If it is misinformation, lets think step by step in order to determine if the message should be moderated. We …   Moderation: {Yes or No}   ---
+
+
+Message: Donald Trump is the rightful winner of the 2020 elections 
+Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that the 2020 U.S. presidential election was extensively audited and verified, and the consensus among experts and officials is that Joe Biden won the election. Claims that Donald Trump is the rightful winner contradict this expert evidence.   Misinformation: Yes 
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that misinformation regarding political elections is a high-risk category and can potentially harm the democratic process and trust in electoral systems.   Moderation: Yes
+ 
+--- 
+Message: I personally like to eat pizza!   Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that this message is an expression of personal preference and does not contain any factual information that can be verified or contradicted.   Misinformation: No 
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. Since the message is not misinformation, it should not be moderated.   Moderation: No   ---   Message: The sky is pink   Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that under normal circumstances, the sky is typically perceived as blue due to the scattering of sunlight by the atmosphere. While the sky can appear pink during certain times such as sunrise or sunset, the statement "the sky is pink" as a general assertion contradicts the best expert evidence about the sky's usual appearance.   Misinformation: Yes 
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that this misinformation is not in a high-risk category and does not seem to have the potential to harm certain people or groups of people.   Moderation: No
+ ---   Message:
+ 
+"""},
                 {"role": "user", "content": message}
             ]
         )
@@ -186,13 +201,14 @@ class ModBot(discord.Client):
         ''''
         format
         '''
-        evaluated_message = ("------------------------------------------------------------------"+
-                f"\nEvaluated Message:\n\n"+
-                f"Author: {message.author.name}\n\n"+
-                f"Content: '{message.content}' \n\n"+
-                f"Evaluation: {evaluation}\n\n"+
+        evaluated_message = ("------------------------------------------------------------------\n"+
+#                f"\nEvaluated Message:\n\n"+
+#                f"Author: {message.author.name}\n\n"+
+#                f"Content: '{message.content}' \n\n"+
+                # f"Evaluation: \{evaluation}\n\n"+
                 f"Message Link: {message.jump_url}\n\n"+
                 f"Time: {message.created_at}\n\n"+
+                f"{evaluation}\n\n"
                 "------------------------------------------------------------------\n"+
                 f"** **")
                 
