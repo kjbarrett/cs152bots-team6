@@ -70,8 +70,11 @@ class ModBot(discord.Client):
             return
 
         # Check if this message was sent in a server ("guild") or if it's a DM
-        if message.guild:
+        if message.guild and message.channel.name == f'group-{self.group_num}-mod':
             await self.handle_channel_message(message)
+            
+        elif message.guild:
+            await self.handle_channel_message_regular(message)
 
         else:
             await self.handle_dm(message)
@@ -104,6 +107,7 @@ class ModBot(discord.Client):
         if self.reports[author_id].report_complete():
             self.reports.pop(author_id)
 
+    # only handle channel messages sent in the mod channel
     async def handle_channel_message(self, message):
         # Only handle messages sent in the "group-#" channel and the mod channel
 #        if not (message.channel.name == f'group-{self.group_num}' or message.channel.name == f'group-{self.group_num}-mod'):
@@ -134,34 +138,70 @@ class ModBot(discord.Client):
 #        await mod_channel.send(self.code_format(scores))
 
 
+    # only handle channel messages not sent in the mod channel
+    async def handle_channel_message_regular(self, message):
+    
+        if not (message.channel.name == f'group-{self.group_num}'):
+            return
+            
+        # Forward the message to the mod channel
+        mod_channel = self.mod_channels[message.guild.id]
+#        await mod_channel.send(f'\n\nForwarded message:\n{message.author.name}: "{message.content}"')
+        scores = self.eval_text(message.content)
+        await mod_channel.send(self.code_format(message, scores))
+        
+
+        
+        if "yes" in scores.lower():
+        
+            self.moderator[0] = Moderator(self)
+            responses = await self.moderator[0].handle_message_1(message)
+            for r in responses:
+                await mod_channel.send(r)
+            
+            
+ 
+
 
     
     def eval_text(self, message):
         ''''
-        TODO: Once you know how you want to evaluate messages in your channel, 
-        insert your code here! This will primarily be used in Milestone 3. 
+        Evaluate the message using OpenAI API, to determine if it should be considered harmful misinformation
         '''
-        """
+        
         response = self.chat_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are tasked with determining if the current message is disinformation. Classify it as Yes or No."},
+                {"role": "system", "content": "You are tasked with determining if the current message is disinformation. Classify it as Yes or No. If it is classified as disinformation, give a brief explanation."},
                 {"role": "user", "content": message}
             ]
         )
         return response.choices[0].message.content
-        """ 
+        
 
         return message
       
     
-    def code_format(self, text):
+    def code_format(self, message, evaluation):
         ''''
-        TODO: Once you know how you want to show that a message has been 
-        evaluated, insert your code here for formatting the string to be 
-        shown in the mod channel. 
+        format
         '''
-        return "Evaluated: '" + text+ "'"
+        evaluated_message = ("------------------------------------------------------------------"+
+                f"\nEvaluated Message:\n\n"+
+                f"Author: {message.author.name}\n\n"+
+                f"Content: '{message.content}' \n\n"+
+                f"Evaluation: {evaluation}\n\n"+
+                f"Message Link: {message.jump_url}\n\n"+
+                f"Time: {message.created_at}\n\n"+
+                "------------------------------------------------------------------\n"+
+                f"** **")
+                
+        return evaluated_message
+        
+        
+                
+                
+#        return "Evaluated: '" + text+ "'"
 
 #    async def send_message_to_group(self, report):
 #        # Need to fix this function
