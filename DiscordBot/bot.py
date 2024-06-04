@@ -51,7 +51,10 @@ class ModBot(discord.Client):
         User = Query()
         existing_user = table.get(User.username == username)
         if existing_user:
-            table.update({column_name: existing_user[column_name] + 1}, User.username == username)
+            if column_name in existing_user:
+                table.update({column_name: existing_user[column_name] + 1}, User.username == username)
+            else:
+                table.update({column_name: 1}, User.username == username)
         else:
             table.insert({'username': username, column_name: 1})
 
@@ -175,8 +178,8 @@ class ModBot(discord.Client):
 
         
         if "yes" in scores.lower():
-        
             self.moderator[0] = Moderator(self)
+            self.update_user_db(message.author.id, 'total_flagged_or_reported')
             responses = await self.moderator[0].handle_message_1(message)
             for r in responses:
                 await mod_channel.send(r)
@@ -259,6 +262,9 @@ Moderation explanation: If the Message is not Misinformation the message should 
         mod_channel = self.mod_channels[guild_id]
         await mod_channel.send(report_content)
         self.moderator[0] = Moderator(self)
+        self.update_user_db(report.reporter_id, 'messages_reported_by_user')
+        # Need author id in the below to update db
+        # self.update_user_db(report.author.id, 'total_flagged_or_reported')
         responses = await self.moderator[0].handle_message_1(report)
         for r in responses:
             await mod_channel.send(r)
