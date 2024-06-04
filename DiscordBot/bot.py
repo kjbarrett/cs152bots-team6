@@ -10,6 +10,8 @@ import openai
 from report import Report
 from moderator import Moderator
 import pdb
+from tinydb import TinyDB, Query
+
 
 # Set up logging to the console
 logger = logging.getLogger('discord')
@@ -17,6 +19,11 @@ logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
+
+# Set up database to store user data
+db = TinyDB('db.json')
+table = db.table('users')
+
 
 # There should be a file called 'tokens.json' inside the same folder as this file
 token_path = 'tokens.json'
@@ -39,6 +46,20 @@ class ModBot(discord.Client):
         self.mod_channels = {} # Map from guild to the mod channel id for that guild
         self.reports = {} # Map from user IDs to the state of their report
         self.moderator = {}
+
+    def update_user_db(self, username, column_name):
+        User = Query()
+        existing_user = table.get(User.username == username)
+        if existing_user:
+            table.update({column_name: existing_user[column_name] + 1}, User.username == username)
+        else:
+            table.insert({'username': username, column_name: 1})
+
+
+    # # Query and print the data to verify
+    # result = table.all()
+    # print(result)
+
 
     async def on_ready(self):
         print(f'{self.user.name} has connected to Discord! It is these guilds:')
@@ -148,6 +169,7 @@ class ModBot(discord.Client):
         mod_channel = self.mod_channels[message.guild.id]
 #        await mod_channel.send(f'\n\nForwarded message:\n{message.author.name}: "{message.content}"')
         scores = self.eval_text(message.content)
+        self.update_user_db(message.author.id, 'auto_eval_count')
         await mod_channel.send(self.code_format(message, scores))
         
 
@@ -174,19 +196,19 @@ class ModBot(discord.Client):
             messages=[
                 {"role": "system", "content":
                 """
-                You are tasked with determining if the current message is misinformation and if it should be moderated.   You are given some context (a Message). You must indicate with a Yes/No answer whether the message should be classified as misinformation. You must also decide with a Yes/No answer if the message should be moderated.  Misinformation is defined as “Information that contradicts the best expert evidence at the time”. Determine this to the best of your ability.  Messages should be Moderated if they fit these categories:    1.) If the misinformation provided is deceptive in nature. Deception is defined as "An intentional attempt to mislead someone.”  2.) If the misinformation’s topic is a high-risk category. The high-risk categories are: Political elections, COVID-19 or other public health issues, Conspiracy theories that target a protected identity, or Misinformation regarding science or the environment.   3.) If the misinformation is not a topic in high-risk categories, but can harm certain people or groups of people   --- Follow the following format. The use of ... is a placeholder that you must continue writing on.   Message: {User’s message}   Explanation : Let’s think step by step in order to determine if this message is Misinformation. We …  Misinformation: {Yes or No}   Moderation explanation: If the Message is not Misinformation the message should not be Moderated, If it is misinformation, lets think step by step in order to determine if the message should be moderated. We …   Moderation: {Yes or No}   ---
+                You are tasked with determining if the current message is misinformation and if it should be moderated. You are given some context (a Message). You must indicate with a Yes/No answer whether the message should be classified as misinformation. You must also decide with a Yes/No answer if the message should be moderated.Misinformation is defined as “Information that contradicts the best expert evidence at the time”. Determine this to the best of your ability.Messages should be Moderated if they fit these categories:  1.) If the misinformation provided is deceptive in nature. Deception is defined as "An intentional attempt to mislead someone.” 2.) If the misinformation’s topic is a high-risk category. The high-risk categories are: Political elections, COVID-19 or other public health issues, Conspiracy theories that target a protected identity, or Misinformation regarding science or the environment. 3.) If the misinformation is not a topic in high-risk categories, but can harm certain people or groups of people --- Follow the following format. The use of ... is a placeholder that you must continue writing on.Message: {User’s message} Explanation : Let’s think step by step in order to determine if this message is Misinformation. We …Misinformation: {Yes or No} Moderation explanation: If the Message is not Misinformation the message should not be Moderated, If it is misinformation, lets think step by step in order to determine if the message should be moderated. We … Moderation: {Yes or No} ---
 
 
-Message: Donald Trump is the rightful winner of the 2020 elections 
-Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that the 2020 U.S. presidential election was extensively audited and verified, and the consensus among experts and officials is that Joe Biden won the election. Claims that Donald Trump is the rightful winner contradict this expert evidence.   Misinformation: Yes 
-Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that misinformation regarding political elections is a high-risk category and can potentially harm the democratic process and trust in electoral systems.   Moderation: Yes
+Message: Donald Trump is the rightful winner of the 2020 elections
+Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that the 2020 U.S. presidential election was extensively audited and verified, and the consensus among experts and officials is that Joe Biden won the election. Claims that Donald Trump is the rightful winner contradict this expert evidence. Misinformation: Yes
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that misinformation regarding political elections is a high-risk category and can potentially harm the democratic process and trust in electoral systems. Moderation: Yes
  
---- 
-Message: I personally like to eat pizza!   Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that this message is an expression of personal preference and does not contain any factual information that can be verified or contradicted.   Misinformation: No 
-Moderation explanation: If the Message is not Misinformation the message should not be Moderated. Since the message is not misinformation, it should not be moderated.   Moderation: No   ---   Message: The sky is pink   Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that under normal circumstances, the sky is typically perceived as blue due to the scattering of sunlight by the atmosphere. While the sky can appear pink during certain times such as sunrise or sunset, the statement "the sky is pink" as a general assertion contradicts the best expert evidence about the sky's usual appearance.   Misinformation: Yes 
-Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that this misinformation is not in a high-risk category and does not seem to have the potential to harm certain people or groups of people.   Moderation: No
- ---   Message:
- 
+---
+Message: I personally like to eat pizza! Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that this message is an expression of personal preference and does not contain any factual information that can be verified or contradicted. Misinformation: No
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. Since the message is not misinformation, it should not be moderated. Moderation: No --- Message: The sky is pink Explanation: Let’s think step by step in order to determine if this message is Misinformation. We know that under normal circumstances, the sky is typically perceived as blue due to the scattering of sunlight by the atmosphere. While the sky can appear pink during certain times such as sunrise or sunset, the statement "the sky is pink" as a general assertion contradicts the best expert evidence about the sky's usual appearance. Misinformation: Yes
+Moderation explanation: If the Message is not Misinformation the message should not be Moderated. If it is misinformation, let's think step by step in order to determine if the message should be moderated. We know that this misinformation is not in a high-risk category and does not seem to have the potential to harm certain people or groups of people. Moderation: No
+--- Message:
+
 """},
                 {"role": "user", "content": message}
             ]
