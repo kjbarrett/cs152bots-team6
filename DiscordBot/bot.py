@@ -57,6 +57,16 @@ class ModBot(discord.Client):
                 table.update({column_name: 1}, User.username == username)
         else:
             table.insert({'username': username, column_name: 1})
+            
+    # Helper function to load db
+    def load_db(self):
+    
+        stats_db = open('db.json', 'r')
+        data = json.load(stats_db)
+        
+        stats_db.close()
+        
+        return json.dumps(data, indent=4)
 
 
     # # Query and print the data to verify
@@ -138,6 +148,16 @@ class ModBot(discord.Client):
 #            return
 
         if not (message.channel.name == f'group-{self.group_num}-mod'):
+            return
+        
+        # Display db with keyword "stats"
+        if message.content.lower() == 'stats':
+            db_content = self.load_db()
+            
+            # Send db with formatted code block
+            await message.channel.send(f"```json \n{db_content} \n```")
+            
+            # Return early
             return
 
 
